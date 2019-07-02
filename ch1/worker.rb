@@ -1,3 +1,4 @@
+require "pry"
 require "ffi-rzmq"
 
 context  = ZMQ::Context.new(1)
@@ -12,7 +13,8 @@ loop do
   msg = ""
   receiver.recv_string(msg)
 
-  puts msg
-  sleep msg.to_i
+  sleep msg.to_i / 1000.0
+  print(".")
+
   sender.send_string("")
 end
