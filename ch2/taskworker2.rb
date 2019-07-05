@@ -17,6 +17,16 @@ poller = ZMQ::Poller.new
 poller.register(receiver, ZMQ::POLLIN)
 poller.register(controller, ZMQ::POLLIN)
 
+trap("INT") do
+  puts "Shutting down."
+
+  [receiver, sender, controller].each(&:close)
+
+  context.terminate
+
+  exit
+end
+
 loop do
   # poller.poll(:blocking)
   poller.poll
