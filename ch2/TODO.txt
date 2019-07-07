@@ -1,0 +1,9 @@
+how to check for error codes in failed bind/connects
+...or elsewhere - like c does? things like, `if rc == -1`?
+
+with a req/rep with multiple clients, how does (if it does)
+the server route the reply back to the exact process that
+made the request?
+
+spend 3-5 days just playing around, writing little examples,
+having fun.
