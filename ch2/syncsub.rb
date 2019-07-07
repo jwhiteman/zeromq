@@ -6,7 +6,7 @@ subscriber = context.socket(ZMQ::SUB)
 subscriber.connect("tcp://localhost:5561")
 subscriber.setsockopt(ZMQ::SUBSCRIBE, "")
 
-# HACK
+# NOTE:
 sleep 1
 
 syncclient = context.socket(ZMQ::REQ)
