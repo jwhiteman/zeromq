@@ -12,3 +12,6 @@ having fun.
 - write a REP/REQ with 1 server and 5 clients
   - start everything w/ a shell script
   - prefix all of these new files w/ jw-
+
+# task 2
+- broker w/ both back and front end as threads
