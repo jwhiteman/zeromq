@@ -3,7 +3,7 @@ require "ffi-rzmq"
 context = ZMQ::Context.new
 
 requester = context.socket(ZMQ::REQ)
-requester.connect("tcp://localhost:5555")
+requester.connect("tcp://localhost:5556")
 
 5.times do
   n = rand(100) + 1
