@@ -7,3 +7,8 @@ made the request?
 
 spend 3-5 days just playing around, writing little examples,
 having fun.
+
+# task 1
+- write a REP/REQ with 1 server and 5 clients
+  - start everything w/ a shell script
+  - prefix all of these new files w/ jw-
