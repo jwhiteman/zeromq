@@ -14,5 +14,9 @@ loop do
 
   puts "Received request. Data: #{request.inspect}"
 
+  sleep 5
+
   socket.send_string("world")
+
+  sleep 5
 end
