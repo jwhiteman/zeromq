@@ -25,6 +25,7 @@ context = ZMQ::Context.new
 uri = "inproc://example"
 
 sink = context.socket(ZMQ::ROUTER)
+sink.setsockopt(ZMQ::ROUTER_MANDATORY, 1)
 sink.bind(uri)
 
 anonymous = context.socket(ZMQ::REQ)
