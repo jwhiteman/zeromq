@@ -1,0 +1,2 @@
+- investigate loadbalanced vs round robin (push/pull)
+  - post-office vs airport immigration example
