@@ -8,6 +8,7 @@
 # ZMQ::Device.create()
 # ZMQ::QUEUE
 # poller sans poll in the server routine
+# ensure fucks up interrupts ?
 require "ffi-rzmq"
 require "openssl"
 require "pry"
@@ -24,75 +25,98 @@ def client
   context         = ZMQ::Context.new
   socket          = context.socket(ZMQ::DEALER)
   socket.identity = hex_ident
-  socket.connect("tcp://localhost:5555")
+  socket.connect("tcp://localhost:5570")
+  print("Client #{socket.identity} started\n")
 
   poller          = ZMQ::Poller.new
-  poller.register_readable(socket)
+  poller.register(socket, ZMQ::POLLIN)
 
-  request_num     = 0
+  reqs = 0
   loop do
-    100.times do |tick|
-      if poller.poll(10) == 1 # ?
-        puts "XXX"
-        socket.recv_strings(message = [])
+    reqs = reqs + 1
+    socket.send_string("Request ##{reqs += 1}")
+    puts "C1"
 
-        puts "#{socket.identity}: #{message.last}"
-      end
+    5.times do
+      socket.recv_string(message = "")
+      puts "C2"
+
+      puts "#{socket.identity}: #{message.last}"
+      $stdout.flush
     end
-
-    puts "..."
-    socket.send_string("Request ##{request_num += 1}")
   end
-ensure
-  socket.close if socket
-  context.terminate
 end
 
 def worker(context)
-  socket = context.socket(ZMQ::DEALER)
-  socket.connect("inproc://backend")
-
   loop do
-    puts "0"
-    socket.recv_strings(message = [])
-    puts "1"
+    wsocket = context.socket(ZMQ::DEALER)
 
-    rand(1..4).each do
-      sleep rand
+    if wsocket.nil?
+      puts "Worker failed to connect. Retrying..."
+      sleep 1
+    else
+      wsocket.connect("inproc://backend")
+      puts "Worker connected."
 
-      socket.send_strings(message)
+      loop do
+        puts "W1"
+        wsocket.recv_strings(message = [])
+        puts "WORKER: I received #{message.inspect}"
+
+        rand(1..4).times do
+          sleep rand
+
+          wsocket.send_strings(message)
+        end
+      end
+    end
+
+    if wsocket
+      wsocket.close
+      break
+    else
+      # no-op, repeat
     end
   end
-ensure
-  socket.close if socket
 end
 
-def server
-  context  = ZMQ::Context.new
-
-  frontend = context.socket(ZMQ::ROUTER)
-  backend  = context.socket(ZMQ::DEALER)
-
-  frontend.bind("tcp://*:5555")
-  backend.bind("inproc://backend")
-
-  poller = ZMQ::Poller.new
-  poller.register_readable(frontend)
-  poller.register_readable(backend)
-
-  workers = 5.times.map do
-    Thread.new { worker(context) }
-  end
-
-  ZMQ::Device.create(ZMQ::QUEUE, frontend, backend)
-
-  workers.each(&:join)
-end
-
-clients = 3.times.map do
+clients = 5.times.map do
   Thread.new { client }
 end
 
-Thread.new { server }.join
+context  = ZMQ::Context.new
 
-binding.pry
+raise "STOP" unless context
+
+frontend = context.socket(ZMQ::ROUTER)
+frontend.setsockopt(ZMQ::ROUTER_MANDATORY, 1)
+frontend.bind("tcp://*:5570")
+
+backend  = context.socket(ZMQ::DEALER)
+backend.bind("inproc://backend")
+
+workers = 5.times.map do
+  Thread.new { worker(context) }
+end
+
+#ZMQ::Device.create(ZMQ::QUEUE, frontend, backend)
+#workers.each(&:join)
+
+#
+poller = ZMQ::Poller.new
+poller.register(frontend, ZMQ::POLLIN)
+poller.register(backend, ZMQ::POLLIN)
+
+loop do
+  poller.poll
+
+  poller.readables do |readable|
+    if readable == frontend
+      puts "Readable on frontend"
+    elsif readable == backend
+      puts "Readable on backend"
+    else
+      puts "unknown"
+    end
+  end
+end
